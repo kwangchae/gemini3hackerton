@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   endLiveSession,
   getDesktopSource,
@@ -11,7 +11,6 @@ import {
 } from './lib/electronApi';
 import './App.css';
 
-const FALLBACK_EN = 'Listening for English speech...';
 const FALLBACK_KO = '한국어 번역이 여기에 표시됩니다.';
 const MAX_DEBUG_LINES = 200;
 const AUDIO_PROCESSOR_BUFFER_SIZE = 2048;
@@ -124,12 +123,10 @@ async function getCaptureStreams(inputMode: InputMode): Promise<{ sourceStream: 
 }
 
 function App() {
-  const [enText, setEnText] = useState('');
   const [koText, setKoText] = useState('');
   const [status, setStatus] = useState('idle');
   const [inputMode, setInputMode] = useState<InputMode>('mic');
   const [isListening, setIsListening] = useState(false);
-  const [isFinal, setIsFinal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDebug, setShowDebug] = useState(false);
   const [debugLines, setDebugLines] = useState<string[]>([]);
@@ -142,9 +139,7 @@ function App() {
 
   useEffect(() => {
     const unsubCaption = onLiveCaption((payload) => {
-      setEnText(payload.enText || '');
       setKoText(payload.koText || '');
-      setIsFinal(Boolean(payload.isFinal));
     });
 
     const unsubStatus = onLiveStatus((payload) => {
@@ -235,14 +230,12 @@ function App() {
     stopSourceStream();
     endLiveSession();
     setIsListening(false);
-    setIsFinal(false);
     setStatus('idle');
     setDebugLines([]);
   };
 
   const handleStart = async () => {
     setErrorMessage('');
-    setIsFinal(false);
     setStatus('connecting');
 
     let localSourceStream: MediaStream | null = null;
@@ -303,60 +296,52 @@ function App() {
 
   return (
     <main className="overlay-shell">
-      <header className="drag-header">
-        <span className="title">Gemini Live Subtitle</span>
-        <span className={`status-badge status-${status}`}>{status}</span>
+      <header className="drag-strip">
+        <span className="drag-title">Live Subtitle</span>
       </header>
 
-      <section className="controls no-drag">
-        <button type="button" className="btn btn-start" onClick={handleStart} disabled={isListening}>
-          Start
-        </button>
-        <button type="button" className="btn btn-stop" onClick={handleStop} disabled={!isListening}>
-          Stop
-        </button>
-
-        <div className="input-toggle" role="group" aria-label="Audio input mode">
-          <button
-            type="button"
-            className={`mode-btn ${inputMode === 'mic' ? 'active' : ''}`}
-            onClick={() => setInputMode('mic')}
-            disabled={isListening}
-          >
-            Mic
+      <div className="controls-panel no-drag">
+        <div className="controls-row">
+          <span className={`status-dot status-${status}`} title={status} />
+          <button type="button" className="btn btn-start" onClick={handleStart} disabled={isListening}>
+            Start
           </button>
+          <button type="button" className="btn btn-stop" onClick={handleStop} disabled={!isListening}>
+            Stop
+          </button>
+          <div className="input-toggle" role="group" aria-label="Audio input mode">
+            <button
+              type="button"
+              className={`mode-btn${inputMode === 'mic' ? ' active' : ''}`}
+              onClick={() => setInputMode('mic')}
+              disabled={isListening}
+            >
+              Mic
+            </button>
+            <button
+              type="button"
+              className={`mode-btn${inputMode === 'system' ? ' active' : ''}`}
+              onClick={() => setInputMode('system')}
+              disabled={isListening}
+            >
+              Sys
+            </button>
+          </div>
           <button
             type="button"
-            className={`mode-btn ${inputMode === 'system' ? 'active' : ''}`}
-            onClick={() => setInputMode('system')}
-            disabled={isListening}
+            className={`mode-btn${showDebug ? ' active' : ''}`}
+            onClick={() => setShowDebug((prev) => !prev)}
           >
-            System Audio
+            Debug
           </button>
         </div>
-
-        <span className="mode-text">
-          {inputMode === 'mic' ? 'Input: microphone' : 'Input: screen/tab audio'}
-        </span>
-
-        <button
-          type="button"
-          className={`mode-btn ${showDebug ? 'active' : ''}`}
-          onClick={() => setShowDebug((prev) => !prev)}
-        >
-          Debug
-        </button>
-      </section>
+      </div>
 
       <section className="caption-box">
-        <p className="caption-line caption-en">{enText || FALLBACK_EN}</p>
         <p className="caption-line caption-ko">{koText || FALLBACK_KO}</p>
       </section>
 
-      <footer className="footer no-drag">
-        <span className="final-flag">{isFinal ? 'final' : 'partial'}</span>
-        {errorMessage ? <span className="error-text">{errorMessage}</span> : null}
-      </footer>
+      {errorMessage ? <p className="error-banner no-drag">{errorMessage}</p> : null}
 
       {showDebug ? (
         <section className="debug-box no-drag">
