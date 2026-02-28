@@ -1,10 +1,23 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+function subscribe(channel, callback) {
+  const handler = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, handler);
+
+  return () => {
+    ipcRenderer.removeListener(channel, handler);
+  };
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
-  startAudioStream: (sampleRate) => ipcRenderer.send('audio-stream-start', sampleRate),
-  sendAudioData: (chunk) => ipcRenderer.send('audio-stream-data', chunk),
-  endAudioStream: () => ipcRenderer.send('audio-stream-end'),
-  onTranscriptResult: (callback) => ipcRenderer.on('transcript-result', (event, data) => callback(data)),
-  onTranslationResult: (callback) => ipcRenderer.on('translation-result', (event, data) => callback(data)),
-  onError: (callback) => ipcRenderer.on('error', (event, error) => callback(error)),
+  startLiveSession: () => ipcRenderer.invoke('live-session-start'),
+  getDesktopSource: () => ipcRenderer.invoke('desktop-source-id'),
+  sendAudioChunk: (chunk, mimeType = 'audio/webm;codecs=opus') => {
+    ipcRenderer.send('live-audio-chunk', { chunk, mimeType });
+  },
+  endLiveSession: () => ipcRenderer.send('live-session-end'),
+  onLiveCaption: (callback) => subscribe('live-caption', callback),
+  onLiveError: (callback) => subscribe('live-error', callback),
+  onLiveStatus: (callback) => subscribe('live-status', callback),
+  onLiveDebug: (callback) => subscribe('live-debug', callback)
 });

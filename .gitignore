@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .env
+molten-infusion-460504-n0-c58763bb7b61.json
 
 # Editor directories and files
 .vscode/*
