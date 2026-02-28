@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Real-time Subtitles Overlay</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 상단 이동 바 (드래그 가능 영역) -->
+  <div class="drag-region">
+    <span>자막 창 (여기를 잡고 이동하세요)</span>
+  </div>
+  
+  <div class="container">
+    <div id="controls">
+      <button id="startBtn">자막 시작</button>
+      <button id="stopBtn" disabled>정지</button>
+    </div>
+    
+    <div class="subtitle-box">
+      <div id="originalText" class="text-ko">대기 중...</div>
+      <div id="translatedText" class="text-en">Waiting...</div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
